@@ -502,20 +502,27 @@ ShapeWorksRunApp<SAMPLERTYPE>::AddSinglePoint()
     ImageType::Pointer img = dynamic_cast<itk::ParticleImageDomain<float, 3> *>(
       m_Sampler->GetParticleSystem()->GetDomain(i))->GetImage();
     ImageType::IndexType center;
-    center[0] = img->GetLargestPossibleRegion().GetSize()[0] / 2;
-    center[1] = img->GetLargestPossibleRegion().GetSize()[1] / 2;
-    center[2] = img->GetLargestPossibleRegion().GetSize()[2] / 2;
+    ImageType::IndexType size;
 
-    while ( !done && center[1] > 0 )
+    unsigned int axis = m_seed_point_sampling_axis;   // 0: X, 1: Y, 2: Z
+    int dir = m_seed_point_sampling_direction;        // 1: positive direction, -1: negative direction
+
+    for (unsigned int k = 0; k < 3; k++)
     {
-      if ( img->GetPixel(center) < 1.0 && img->GetPixel( center ) > -1.0 )
+      size[k] = img->GetLargestPossibleRegion().GetSize()[k];
+      center[k] = size[k] / 2;
+    }
+
+    while (!done && center[axis] > 0 && center[axis] < size[axis])
+    {
+      if (img->GetPixel(center) < 1.0 && img->GetPixel(center) > -1.0)
       {
         PointType pos;
-        img->TransformIndexToPhysicalPoint( center, pos );
-        m_Sampler->GetParticleSystem()->AddPosition( pos, i );
+        img->TransformIndexToPhysicalPoint(center, pos);
+        m_Sampler->GetParticleSystem()->AddPosition(pos, i);
         done = true;
       }
-      center[1]--;
+      center[axis] += dir;
     }
 
     // couldn't find it, try the old method
@@ -814,6 +821,18 @@ ShapeWorksRunApp<SAMPLERTYPE>::SetUserParameters(const char *fname)
     this->m_keep_checkpoints = 0;
     elem = docHandle.FirstChild( "keep_checkpoints" ).Element();
     if (elem) this->m_keep_checkpoints = atoi(elem->GetText());
+
+    this->m_seed_point_sampling_axis = 1; // default: Y
+    elem = docHandle.FirstChild( "seed_point_sampling_axis" ).Element();
+    if (elem) this->m_seed_point_sampling_axis = atoi(elem->GetText());
+    if (this->m_seed_point_sampling_axis < 0 || this->m_seed_point_sampling_axis > 2)
+      m_seed_point_sampling_axis = 1; // reset to default for invalid values
+
+    this->m_seed_point_sampling_direction = -1; // default: negative
+    elem = docHandle.FirstChild( "seed_point_sampling_direction" ).Element();
+    if (elem) this->m_seed_point_sampling_direction = atoi(elem->GetText());
+    if (this->m_seed_point_sampling_direction == 0)
+      m_seed_point_sampling_direction = -1; // reset to default for invalid values
   }
 
   // Write out the parameters
@@ -841,6 +860,8 @@ ShapeWorksRunApp<SAMPLERTYPE>::SetUserParameters(const char *fname)
   std::cout << "m_procrustes_scaling = " << m_procrustes_scaling << std::endl;
   std::cout << "m_adaptivity_mode = " << m_adaptivity_mode << std::endl;
   std::cout << "m_keep_checkpoints = " << m_keep_checkpoints << std::endl;
+  std::cout << "m_seed_point_sampling_axis = " << m_seed_point_sampling_axis << std::endl;
+  std::cout << "m_seed_point_sampling_direction = " << m_seed_point_sampling_direction << std::endl;
   std::cout << "m_optimization_iterations_completed = " << m_optimization_iterations_completed << std::endl;
 
 }

@@ -162,6 +162,8 @@ protected:
   int m_spheres_per_domain;
   int m_adaptivity_mode;
   int m_keep_checkpoints;
+  unsigned int m_seed_point_sampling_axis; // 0:X, 1:Y, 2:Z
+  int m_seed_point_sampling_direction;     // -1:negative direction, 1:positive direction
 };
 
 #if ITK_TEMPLATE_EXPLICIT
